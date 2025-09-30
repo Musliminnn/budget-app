@@ -176,7 +176,9 @@ const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const formattedDate = computed(() => {
   if (!props.modelValue) return 'Pilih tanggal';
 
-  const date = new Date(props.modelValue);
+  // Parse date with UTC to avoid timezone issues
+  const [year, month, day] = props.modelValue.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
   return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
     month: 'long',
@@ -198,9 +200,14 @@ const calendarDays = computed(() => {
   for (let i = firstDayOfWeek - 1; i >= 0; i--) {
     const day = prevLastDate - i;
     const date = new Date(currentYear.value, currentMonth.value - 1, day);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const dateStr = `${year}-${month}-${dayStr}`;
+
     days.push({
       day,
-      date: date.toISOString().split('T')[0],
+      date: dateStr,
       isCurrentMonth: false,
       isToday: false,
       isSelected: false,
@@ -211,7 +218,12 @@ const calendarDays = computed(() => {
   // Current month days
   for (let day = 1; day <= lastDate; day++) {
     const date = new Date(currentYear.value, currentMonth.value, day);
-    const dateStr = date.toISOString().split('T')[0];
+    // Format date as YYYY-MM-DD using local date components
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const dateStr = `${year}-${month}-${dayStr}`;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -229,9 +241,14 @@ const calendarDays = computed(() => {
   const remainingDays = 42 - days.length;
   for (let day = 1; day <= remainingDays; day++) {
     const date = new Date(currentYear.value, currentMonth.value + 1, day);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const dateStr = `${year}-${month}-${dayStr}`;
+
     days.push({
       day,
-      date: date.toISOString().split('T')[0],
+      date: dateStr,
       isCurrentMonth: false,
       isToday: false,
       isSelected: false,

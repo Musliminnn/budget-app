@@ -46,15 +46,10 @@
             required
             inputmode="numeric"
             @input="handleAmountInput"
-            @blur="formatAmountDisplay"
-            @focus="unformatAmountDisplay"
             class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
             placeholder="0"
           />
         </div>
-        <p class="text-xs text-gray-500 mt-1">
-          {{ amountPreview }}
-        </p>
       </div>
 
       <!-- Category -->
@@ -155,18 +150,11 @@ const form = ref({
 });
 
 const rawAmount = ref('');
-const isAmountFocused = ref(false);
 
 const availableCategories = computed(() => {
   return form.value.type === 'expense'
     ? store.expenseCategories
     : store.incomeCategories;
-});
-
-const amountPreview = computed(() => {
-  const amount = parseFloat(rawAmount.value || '0');
-  if (amount === 0) return '';
-  return store.formatCurrency(amount);
 });
 
 const isFormValid = computed(() => {
@@ -196,22 +184,27 @@ watch(() => form.value.type, () => {
 });
 
 function handleAmountInput(event) {
+  // Get cursor position
+  const input = event.target;
+  const cursorPosition = input.selectionStart;
+  const oldValue = form.value.amount;
+  const oldLength = oldValue.length;
+
   // Remove all non-digit characters
   let value = event.target.value.replace(/\D/g, '');
   rawAmount.value = value;
-  form.value.amount = value;
-}
 
-function formatAmountDisplay() {
-  isAmountFocused.value = false;
-  if (rawAmount.value) {
-    form.value.amount = formatNumber(rawAmount.value);
-  }
-}
+  // Format with dots
+  const formatted = value ? formatNumber(value) : '';
+  form.value.amount = formatted;
 
-function unformatAmountDisplay() {
-  isAmountFocused.value = true;
-  form.value.amount = rawAmount.value;
+  // Restore cursor position
+  requestAnimationFrame(() => {
+    const newLength = formatted.length;
+    const lengthDiff = newLength - oldLength;
+    const newPosition = cursorPosition + lengthDiff;
+    input.setSelectionRange(newPosition, newPosition);
+  });
 }
 
 function formatNumber(num) {
