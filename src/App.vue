@@ -34,7 +34,7 @@ function handleCancelled() {
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
     <!-- Header -->
-    <header class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+    <header class="bg-blue-600 text-white shadow-lg">
       <div class="container mx-auto px-4 py-6">
         <div class="flex items-center justify-between">
           <div>

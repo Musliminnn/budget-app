@@ -73,7 +73,7 @@
                 </button>
                 <span class="text-gray-300">|</span>
                 <button
-                  @click="handleDelete(transaction)"
+                  @click="openDeleteDialog(transaction)"
                   class="text-xs text-red-600 hover:text-red-700 font-medium"
                 >
                   Hapus
@@ -108,12 +108,21 @@
         </p>
       </div>
     </div>
+
+    <!-- Delete Dialog -->
+    <DeleteDialog
+      :show="showDeleteDialog"
+      :transaction="transactionToDelete"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
 import { useBudgetStore } from '../stores/budgetStore';
+import DeleteDialog from './DeleteDialog.vue';
 
 const emit = defineEmits(['edit']);
 
@@ -121,6 +130,8 @@ const store = useBudgetStore();
 
 const activeFilter = ref('all');
 const searchQuery = ref('');
+const showDeleteDialog = ref(false);
+const transactionToDelete = ref(null);
 
 const filters = [
   { label: 'Semua', value: 'all' },
@@ -151,9 +162,21 @@ const filteredTransactions = computed(() => {
   return transactions;
 });
 
-async function handleDelete(transaction) {
-  if (confirm(`Hapus transaksi ${transaction.category} - ${store.formatCurrency(transaction.amount)}?`)) {
-    await store.deleteTransaction(transaction.id);
+function openDeleteDialog(transaction) {
+  transactionToDelete.value = transaction;
+  showDeleteDialog.value = true;
+}
+
+async function confirmDelete() {
+  if (transactionToDelete.value) {
+    await store.deleteTransaction(transactionToDelete.value.id);
+    showDeleteDialog.value = false;
+    transactionToDelete.value = null;
   }
+}
+
+function cancelDelete() {
+  showDeleteDialog.value = false;
+  transactionToDelete.value = null;
 }
 </script>
