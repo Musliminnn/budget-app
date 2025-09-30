@@ -1,16 +1,16 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
-const BudgetDatabase = require('./src/db/database.cjs')
 
-const isDev = process.env.NODE_ENV !== 'production'
+const isDev = process.env.NODE_ENV === 'development'
 
-// Database instance
-let database;
+let database
+let mainWindow
 
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -18,21 +18,30 @@ function createWindow() {
     }
   })
 
+  mainWindow.once('ready-to-show', () => {
+      mainWindow.show()
+      mainWindow.maximize()
+  })
+
   if (isDev) {
-    // Try port 5174 first, then fallback to 5173
-    mainWindow.loadURL('http://localhost:5174').catch(() => {
-      mainWindow.loadURL('http://localhost:5173')
-    })
+    mainWindow.loadURL('http://localhost:5174')
+      .catch(() => mainWindow.loadURL('http://localhost:5173'))
     mainWindow.webContents.openDevTools()
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist/index.html'))
+    const unpackedPath = __dirname.replace('app.asar', 'app.asar.unpacked')
+    const indexPath = path.join(unpackedPath, 'dist', 'index.html')
+
+    mainWindow.loadFile(indexPath)
   }
 }
 
 app.whenReady().then(() => {
   // Initialize database
-  if (!isDev) {
+  try {
+    const BudgetDatabase = require('./src/db/database.cjs')
     database = new BudgetDatabase(app)
+  } catch (error) {
+    console.error('Database error:', error)
   }
 
   createWindow()
@@ -50,51 +59,60 @@ app.on('window-all-closed', () => {
   }
 })
 
-// IPC Handlers for database operations
+// IPC Handlers
 ipcMain.handle('db:addTransaction', async (_event, transaction) => {
-  if (!database) return { success: false, error: 'Database not available in dev mode' };
-
+  if (!database) return { success: false, error: 'Database not initialized' }
   try {
-    const result = database.addTransaction(transaction);
-    return { success: true, id: result.lastInsertRowid };
+    const result = database.addTransaction(transaction)
+    return { success: true, id: result.lastInsertRowid }
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message }
   }
-});
+})
 
 ipcMain.handle('db:getTransactionsByMonth', async (_event, year, month) => {
-  if (!database) return [];
-  return database.getTransactionsByMonth(year, month);
-});
+  if (!database) return []
+  try {
+    return database.getTransactionsByMonth(year, month)
+  } catch (error) {
+    return []
+  }
+})
 
 ipcMain.handle('db:deleteTransaction', async (_event, id) => {
-  if (!database) return { success: false, error: 'Database not available in dev mode' };
-
+  if (!database) return { success: false, error: 'Database not initialized' }
   try {
-    database.deleteTransaction(id);
-    return { success: true };
+    database.deleteTransaction(id)
+    return { success: true }
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message }
   }
-});
+})
 
 ipcMain.handle('db:updateTransaction', async (_event, id, transaction) => {
-  if (!database) return { success: false, error: 'Database not available in dev mode' };
-
+  if (!database) return { success: false, error: 'Database not initialized' }
   try {
-    database.updateTransaction(id, transaction);
-    return { success: true };
+    database.updateTransaction(id, transaction)
+    return { success: true }
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message }
   }
-});
+})
 
 ipcMain.handle('db:getSummaryByMonth', async (_event, year, month) => {
-  if (!database) return [];
-  return database.getSummaryByMonth(year, month);
-});
+  if (!database) return []
+  try {
+    return database.getSummaryByMonth(year, month)
+  } catch (error) {
+    return []
+  }
+})
 
 ipcMain.handle('db:getCategorySummary', async (_event, type, year, month) => {
-  if (!database) return [];
-  return database.getCategorySummary(type, year, month);
-});
+  if (!database) return []
+  try {
+    return database.getCategorySummary(type, year, month)
+  } catch (error) {
+    return []
+  }
+})
